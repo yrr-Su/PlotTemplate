@@ -1,4 +1,3 @@
-import bdb
 
 from datetime import datetime as dtm
 from datetime import timedelta as dtmdt
@@ -446,9 +445,9 @@ def boxPlot(df_lst, clasfy_lst, main_set, **kwarg):
 	ax = _pic_set(ax, 'y', main_set, fs, font_dic_bold)
 	ax.tick_params(labelsize=fs, pad=5)
 
+	ax.set_xticks(tick_pos)
 	ax.set_xticklabels(main_set['tick_nam'], **font_dic_bold)
 
-	
 	ax.legend(handles=leg_lst, labels=main_set['leg_nam'], framealpha=0, fontsize=fs-5.)
 
 	font_dic_bold.update(fontsize=fs+5.)
@@ -620,6 +619,8 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		bar_pos = n.arange(0, (len(leg_nam)+1)*len(clasfy_nam), len(leg_nam)+1)
 	tick_pos = bar_pos.copy() + (len(leg_nam)-1)/2
 
+	clasfy_lst = clasfy_lst[0]
+
 	## classify 
 	mean_lst, std_lst = [], []
 	if clasfy_lst is not None:
@@ -627,16 +628,10 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		drop_idx = concat([df,twin], axis=1).dropna().index
 		df = df.loc[drop_idx].reindex(df.index)
 
-		if len(df.keys()) != len(clasfy_lst):
-			clasfy_lst *= len(df.keys())
-
-		if len(df.keys()) != len(clasfy_lst):
-			raise ValueError('Length of Data List Should Be Same as The Length of Classify-Data List !!!')
-
-		for (_key, _dt), _clas_dt in zip(df.items(), clasfy_lst):
+		for _key, _dt in df.items():
 			_mean_lst, _std_lst = [], []
 			for _clas_nam in clasfy_nam:
-				_dt_bar = _dt.loc[_clas_dt[_clas_nam]].copy()
+				_dt_bar = _dt.loc[clasfy_lst[_clas_nam]].copy()
 				_mean_lst.append(_dt_bar.mean())
 				_std_lst.append(_dt_bar.std())
 
@@ -690,14 +685,13 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		if clasfy_lst is not None:
 
 			twin = twin.loc[drop_idx].reindex(df.index)
-			for _clas_dt in clasfy_lst:
-				for _clas_nam in clasfy_nam:
-					_dt = twin.loc[_clas_dt[_clas_nam]].copy()
-					_mean_lst.append(_dt.mean())
-					_std_lst.append(_dt.std())
+
+			for _clas_nam in clasfy_nam:
+				_dt = twin.loc[clasfy_lst[_clas_nam]].copy()
+				_mean_lst.append(_dt.mean())
+				_std_lst.append(_dt.std())
 		else:
 			_mean_lst, _std_lst = twin[0], twin[1]
-
 
 		errln = ax_t.errorbar(bar_pos, _mean_lst, yerr=_std_lst, color='#000000',
 							  capsize=6, marker='o', ms=12, ls='none', label=twin_set['set_nam'])
@@ -706,7 +700,7 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		ax_t.set(ylim=twin_set.get('lim') or (0,None))
 		ax_t.set(yticks=twin_set.get('ticks') or _auto_ticks(*ax_t.get_ylim()) or ax_t.get_yticks())
 
-		ax_t.set_ylabel(twin_set.get('label'), rotation=-90, labelpad=twin_set.get('twin_label_pad') or 35, **font_dic_bold)
+		ax_t.set_ylabel(twin_set.get('label'), rotation=-90, labelpad=twin_set.get('twin_label_pad') or 25, **font_dic_bold)
 
 		leg_lst.append(errln)
 		bar_pos += 1

@@ -495,8 +495,8 @@ basic_setting = {
 							  sca_set=dict(cmap='jet',vmin=3,vmax=8),
 							  bar_title=r'Opt. Coe.'),
 
-				'mass_coe' : dict(lim=(0,90),label=r'Mass Concentration ($\bf \mu g/m^3$)',ticks=[0,30,60,90],title=r'Mass Concentration',
-							  plot_set=dict(color='#333333',label=r'PM'),label_pad=0,
+				'mass_coe' : dict(lim=(0,90), label=r'Mass Concentration ($\bf \mu g/m^3$)', title=r'Mass Concentration',
+							  plot_set=dict(color='#333333',label=r'PM'), label_pad=0,
 							  sca_set=dict(cmap='jet',vmin=10,vmax=50),
 							  bar_title=r'PM'),
 
@@ -581,7 +581,14 @@ basic_setting = {
 
 				'clasfyALWCratio' : dict(tick_nam=['<0.25','0.25-0.5','0.5-0.75','>0.75'],clasfy_nam=['<0.25','0.25-0.5','0.5-0.75','>0.75'],xlabel=r'ALWC/PM$\rm _{2.5}$'),
 
-				'clasfyEvent' : dict(tick_nam=['Total','Event','Clean'],clasfy_nam=['all','event','clean']),
+				'clasfyEvent' : dict(tick_nam=['Total','Event','Clean'], clasfy_nam=['all','event','clean'], 
+
+									 line_set=[dict(label='total',color='#ffb703',lw=2), dict(label='event',color='#023047',lw=2), 
+											   dict(label='clean',color='#8ecae6',lw=2)],
+
+									 sca_set=[dict(label='total',color='#ffb703'), dict(label='event',color='#023047'), 
+											  dict(label='clean',color='#8ecae6')]
+									),
 
 				'clasfyCase' : dict(tick_nam=['Start','Increase','Peak','Decrease','End'],clasfy_nam=['Start','Increase','Peak','Decrease','End']),
 				# 'clasfyCase' : dict(tick_nam=['蔥肉卷','圓甜不辣','牛肋條','爆卵柳葉魚','雞軟骨串'],clasfy_nam=['A','B','C','D','E']),
