@@ -17,16 +17,14 @@ class setting_parser:
 
 
 		self.cla_set = basic_setting
-	
+
 		self.cla_bsc = dict()
 		if clasfy_nam is not None:
-			for _ky, _set in clasfy_setting[clasfy_nam].items():
-				if _ky=='basic': 
-					self.cla_bsc = _set
-					continue
+			self.cla_bsc = clasfy_setting[clasfy_nam].pop('basic')
+			self.cla_set.update(clasfy_setting[clasfy_nam])
 
-				self.cla_set[_ky].update(_set)
-			
+		self.out_nam = f"{'-' + self.cla_bsc.get('nam') or ''}"
+
 
 	def get_config(self, set_nam):
 		all_set = self.cla_set[set_nam]
@@ -45,10 +43,10 @@ class setting_parser:
 
 		if twin:
 			all_set['twin_plot_set'] = bsc_set['plot_set']
-			all_set['out_nam'] = f"{set_nam}"
+			all_set['out_nam'] = f"{set_nam}{self.out_nam}"
 		else:
 			all_set['plot_set'] = bsc_set['plot_set']
-			all_set['out_nam'] = f"tmser-{set_nam}"
+			all_set['out_nam'] = f"tmser-{set_nam}{self.out_nam}"
 
 		all_set['tick_freq'] = tick_freq
 		all_set['minor_tick_freq'] = minor_tick_freq
@@ -68,7 +66,7 @@ class setting_parser:
 		all_set['yticks'] = ticks
 		all_set['ylim'] = lim
 		
-		all_set['out_nam'] = f"bivpol-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"bivpol-{set_nam}{self.out_nam}"
 
 		return all_set
 
@@ -90,7 +88,7 @@ class setting_parser:
 
 		all_set['title'] = self.cla_bsc.get('title')
 		
-		all_set['out_nam'] = f"scaval-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"scaval-{set_nam}{self.out_nam}"
 
 		return all_set
 
@@ -108,7 +106,7 @@ class setting_parser:
 
 		all_set['title'] = self.cla_bsc.get('title')
 		
-		all_set['out_nam'] = f"scamul-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"scamul-{set_nam}{self.out_nam}"
 
 		return all_set
 
@@ -126,7 +124,7 @@ class setting_parser:
 
 
 		all_set['title'] = self.cla_bsc.get('title')
-		all_set['out_nam'] = f"sca-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"sca-{set_nam}{self.out_nam}"
 
 		return all_set
 
@@ -138,7 +136,7 @@ class setting_parser:
 		all_set.update(self.cla_set[_type])
 		all_set.update(self.cla_set.get(_classfy) or {})
 		
-		all_set['out_nam'] = f"pie-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"pie-{set_nam}{self.out_nam}"
 		all_set['title'] = self.cla_bsc.get('title')
 
 		return all_set
@@ -160,7 +158,7 @@ class setting_parser:
 		all_set.update(_type_set)
 		all_set.update(self.cla_set[_classfy])
 		
-		all_set['out_nam'] = f"box-{set_nam}-{self.cla_bsc.get('nam','special')}"
+		all_set['out_nam'] = f"box-{set_nam}{self.out_nam}"
 		all_set['title'] = (_comp_set.get('title') or '')
 
 		return all_set
@@ -182,7 +180,7 @@ class setting_parser:
 		all_set.update(_type_set)
 		all_set.update(self.cla_set[_classfy])
 		
-		all_set['out_nam'] = f"clasfybar-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"clasfybar-{set_nam}{self.out_nam}"
 		all_set['title'] = (_comp_set.get('title') or '')
 
 		return all_set
@@ -196,6 +194,37 @@ class setting_parser:
 		all_set.update(self.cla_set[_classfy])
 
 		all_set['title'] = self.cla_bsc.get('title')
-		all_set['out_nam'] = f"lnplot-{set_nam}-{self.cla_bsc.get('nam', 'special')}"
+		all_set['out_nam'] = f"lnplot-{set_nam}{self.out_nam}"
 		
 		return all_set
+
+	def set_stack(self, set_nam,):
+
+		all_set = {}
+		_type, _classfy = set_nam.split('-')
+
+		all_set.update(self.cla_set[_type])
+		all_set.update(self.cla_set[_classfy])
+
+		all_set['title'] = self.cla_bsc.get('title')
+		all_set['out_nam'] = f"stkplot-{set_nam}{self.out_nam}"
+		
+		return all_set
+
+	def set_diu(self, set_nam,):
+
+		all_set = {}
+		_type, _classfy = set_nam.split('-')
+
+		all_set.update(self.cla_set[_type])
+		all_set.update(self.cla_set[_classfy])
+
+		all_set['title'] = self.cla_bsc.get('title')
+		all_set['out_nam'] = f"diuplot-{set_nam}{self.out_nam}"
+		
+		return all_set
+
+
+
+
+

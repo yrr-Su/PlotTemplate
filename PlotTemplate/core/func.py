@@ -132,28 +132,28 @@ def _cm2inch(*cm_val):
 	return [ _cm/2.54 for _cm in cm_val ]
 
 def _auto_ticks(_hd, _tail):
-	if (_hd is not None)&(_tail is not None):
+	if (_hd is not None) & (_tail is not None):
 
-		_tk_intvl, _diff = [3,4,5,2], _tail-_hd
+		_tk_intvl, _diff = [3, 4, 5, 2], _tail - _hd
 		_diff_sci = 1
-		if _diff.as_integer_ratio()[-1]!=1:
+		if _diff.as_integer_ratio()[-1] != 1:
 
-			_diff = round(_diff,2)
+			_diff = round(_diff, 2)
 			_diff_sci = 10**len(str(_diff).split('.')[-1])
-			_diff = int(_diff*_diff_sci)
+			_diff = int(_diff * _diff_sci)
 
 		for _num in _tk_intvl:
-			if (_diff%_num)!=0: continue
+			if (_diff % _num) != 0: continue
 			
-			_intvl = (_diff//_num)/_diff_sci
-			if ((_intvl%5)!=0)&(_diff>100): continue
+			_intvl = (_diff // _num) / _diff_sci
+			if ((_intvl % 5) != 0 ) & (_diff > 100): continue
 
-			_ticks = (n.arange(_hd,_tail+_intvl,_intvl))
+			_ticks = (n.arange(_hd, _tail + _intvl, _intvl))
 
-			if _diff_sci>1:
+			if _diff_sci > 1:
 				return _ticks.round(1).tolist()
 
-			return _ticks.astype('int64').tolist()
+			return _ticks.astype('float64').round(1).tolist()
 	return None
 
 def _pic_set(_ax, _axis, _set, _fs, _f_set):

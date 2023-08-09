@@ -243,7 +243,7 @@ basic_setting = {
 				'TVC_um3' : dict(lim=(0,60),label=r'TVC ($\bf \mu m^3 / cm^3$)',nam='tvc-um3',
 							  plot_set=dict(label='TVC',color='#333333'),label_pad_twin=30,label_pad=0,
 							  sca_set=dict(cmap='jet',vmin=5,vmax=40),
-							  bar_title=r'TVC ($\rm \mu m^3 / cm^3$)'),
+							  bar_title=r'TVC'),
 
 				'dTVC'  : dict(lim=(None,None),label=r'dTVC',ticks=None,nam='dtvc',
 							  sca_set=dict(cmap='jet',vmin=None,vmax=None),

@@ -1,7 +1,7 @@
 
 from datetime import datetime as dtm
 from datetime import timedelta as dtmdt
-from pandas import date_range, concat, DataFrame, to_numeric, cut, qcut
+from pandas import date_range, concat, DataFrame, to_numeric, cut, qcut, Series
 from pathlib import Path
 import numpy as n
 np = n
@@ -183,8 +183,8 @@ def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, _clasfy=None, *
 		
 		ax.legend(handles=[ln], framealpha=0, fontsize=fs-4.)
 	
-		if line_1to1:
-			ax.plot([0,ax.get_ylim()[-1]], [0,ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
+	if line_1to1:
+		ax.plot([0,ax.get_ylim()[-1]], [0,ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
 
 	font_dic_bold.update(fontsize=fs+15.)
 	ax.set_title(main_set['title'], pad=15, **font_dic_bold)
@@ -264,8 +264,8 @@ def scatterVal(df_x, df_y, df_val, main_set, df_size=None, size_range=None, linr
 		leg = ax.legend(handles=[ln], framealpha=0, fontsize=fs-4.)
 		fig.add_artist(leg)
 
-		if line_1to1:
-			ax.plot([0,ax.get_ylim()[-1]], [0,ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
+	if line_1to1:
+		ax.plot([0,ax.get_ylim()[-1]], [0,ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
 
 	if df_size is not None:
 
@@ -466,7 +466,7 @@ def boxPlot(df_lst, clasfy_lst, main_set, **kwarg):
 
 
 @_template_setting(figsize=(10,10), dirnam='piePlot', fs=20)
-def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, show_info=True, pie_type='origin', 
+def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, show_info=True, pie_type='origin', pct_lim=0, 
 			info_loc=(.5,.5), **kwarg):
 	"""
 	plot Pie plot
@@ -499,6 +499,9 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 	## parameter
 	fig, ax, fs, font_dic_norm, font_dic_bold = kwarg['fig'], kwarg['ax'], kwarg['fs'], kwarg['font_dic_norm'], kwarg['font_dic_bold']
 
+	def autopct_format(pct):
+		return f'{pct:.1f}%' if pct > pct_lim else ''
+
 	width, outer_r, pie_pad, pctdis = .2, 1.2, .0, .01
 	color, nam = main_set['color'], main_set.get('text_nam')
 
@@ -508,8 +511,8 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 
 			_df = _df.dropna().copy()
 			ax.pie(_df.mean().values, explode=None, labels=None, labeldistance=None, colors=color,
-				   autopct='%1.1f%%' if show_txt else None, shadow=False, textprops=font_dic_bold,
-				   radius=outer_r-(width+pie_pad)*_idx, pctdistance=0.9-pctdis*_idx,
+				   autopct=autopct_format if show_txt else None, shadow=False, textprops=font_dic_bold,
+				   radius=outer_r - (width + pie_pad) * _idx, pctdistance=0.9 - pctdis * _idx,
 				   startangle=0, wedgeprops=dict(width=width, edgecolor='k'))
 
 			_df_all = _df.sum(axis=1).copy()
@@ -524,11 +527,11 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 		_df = dt_lst[0].dropna().copy()
 
 		ax.pie(_df.mean().values, explode=None, labels=None, labeldistance=None, colors=color,
-			   autopct='%1.1f%%' if show_txt else None, shadow=False, textprops=font_dic_bold,
+			   autopct=autopct_format if show_txt else None, shadow=False, textprops=font_dic_bold,
 			   startangle=0, wedgeprops=dict(edgecolor='k'))
 
 	if show_legend:
-		legend = ax.legend(main_set['leg_nam'], framealpha=0, fontsize=fs, title_fontsize=fs, bbox_to_anchor=[.9,.8], loc=3,
+		legend = ax.legend(main_set['leg_nam'], framealpha=0, fontsize=fs, title_fontsize=fs, bbox_to_anchor=[.9, .8], loc=3,
 						   title=main_set['leg_title'])
 
 	font_dic_bold.update(fontsize=fs+5.)
@@ -599,9 +602,164 @@ def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=Non
 
 	return fig, out_nam
 
+@_template_setting(figsize=(8,6), dirnam='stackPlot', fs=17)
+def stackPlot(*df_lst, main_set, x_lst=None, y_lst=None, ini_val=0, end_val=None, vlines=False, hlines=False, show_legend=True, **kwarg):
+
+	main_set.update(kwarg)
+	out_nam = main_set["out_nam"]
+	print(f'stackPlot : ', end='')
+
+	## parameter
+	fig, ax, fs, font_dic_norm, font_dic_bold = kwarg['fig'], kwarg['ax'], kwarg['fs'], kwarg['font_dic_norm'], kwarg['font_dic_bold']
+
+	if x_lst is not None:
+		df_lst = []
+		for _x, _y in zip(x_lst, y_lst):
+			df_lst.append(DataFrame(_y, index=_x))
+
+	if end_val is not None:
+		df_end = DataFrame([end_val] * len(df_lst[0])).set_index(df_lst[0].index)[0]
+
+	df_bot = DataFrame([ini_val] * len(df_lst[0])).set_index(df_lst[0].index)[0]
+
+	## plot
+	ln_lst = []
+
+	for _df, _set in zip(df_lst, main_set['line_set']):
+
+		ln, = ax.plot(_df + df_bot, **_set)
+		ln_lst.append(ln)
+
+		fill = ax.fill_between(_df.index, df_bot, _df + df_bot, alpha=.2, **_set)
+
+		df_bot += _df
+
+	if end_val is not None:
+		fill = ax.fill_between(_df.index, df_bot, df_end, alpha=.2, color='#000000')
+
+
+	ax.tick_params(labelsize=fs, pad=main_set.get('tick_pad', 5))
+	ax.set(xlim=main_set['xlim'], ylim=main_set['ylim'], 
+		   xscale=main_set.get('xscale', 'linear'), yscale=main_set.get('yscale', 'linear'))
+
+	if vlines:
+		ax.vlines(vlines, *ax.get_ylim(), color='#444444', ls='--')
+	if hlines:
+		ax.hlines(hlines, *ax.get_xlim(), color='#444444', ls='--')
+
+	ax.set_xlabel(main_set['xlabel'], labelpad=main_set.get('xlabel_pad') or 0, **font_dic_bold)
+	ax.set_ylabel(main_set['ylabel'], labelpad=main_set.get('ylabel_pad') or 0, **font_dic_bold)
+
+	if main_set.get('xscale') != 'log':
+		ax.set(xticks=main_set.get('xticks') or _auto_ticks(*main_set['xlim']) or ax.get_xticks(), ylim=main_set['ylim'])
+		ax.ticklabel_format(axis='x', scilimits=(-2, 3), useMathText=True)
+		ax.xaxis.offsetText.set_fontproperties(dict(size=fs))
+
+	if main_set.get('yscale') != 'log':
+		ax.set(yticks=main_set.get('yticks') or _auto_ticks(*main_set['ylim']) or ax.get_yticks(), xlim=main_set['xlim'])
+
+		ax.ticklabel_format(axis='y', scilimits=(-2, 3), useMathText=True)
+		ax.yaxis.offsetText.set_fontproperties(dict(size=fs))
+
+	if show_legend:
+		ax.legend(handles=ln_lst, framealpha=0, fontsize=fs-2., title=main_set.get('leg_title'), title_fontsize=fs-2)
+
+	font_dic_bold.update(fontsize=fs+5.)
+	ax.set_title(main_set['title'], pad=8, **font_dic_bold)
+
+	return fig, out_nam
+
+
+@_template_setting(figsize=(10,6), dirnam='diuPlot', fs=19)
+def diuPlot(*df_lst, main_set, std_shade=True, show_legend=True, vlines=False, hlines=False, twin_val=None, twin_set=None, show_twin_label=True, **kwarg):
+
+	main_set.update(kwarg)
+	out_nam = main_set["out_nam"]
+	print(f'diuPlot : ',end='')
+
+	## parameter
+	fig, ax, fs, font_dic_norm, font_dic_bold = kwarg['fig'], kwarg['ax'], kwarg['fs'], kwarg['font_dic_norm'], kwarg['font_dic_bold']
+
+	df_all = concat(df_lst, axis=1)
+	df_grp = df_all.groupby(df_all.index.hour)
+	
+	df_mn, df_std = df_grp.mean(), df_grp.std()
+
+	## plot
+	ln_lst = []
+	for (_ky, _mn), (_ky, _std), _set in zip(df_mn.items(), df_std.items(), main_set['line_set']):
+
+		ln, = ax.plot(_mn, **_set)
+		ln_lst.append(ln)
+		
+		if std_shade:
+			ax.fill_between(_mn.index, _mn - _std, _mn + _std, alpha=.2, **_set)
+
+	ax.tick_params(labelsize=fs, pad=main_set.get('tick_pad', 5))
+	ax.set(xlim=[0, 23], xticks=[0, 6, 12, 18], ylim=main_set['ylim'], 
+		   yscale=main_set.get('yscale', 'linear'))
+
+	if vlines:
+		ax.vlines(vlines, *ax.get_ylim(), color='#444444', ls='--')
+	if hlines:
+		ax.hlines(hlines, *ax.get_xlim(), color='#444444', ls='--')
+
+	ax.set_ylabel(main_set['ylabel'], labelpad=main_set.get('ylabel_pad') or 0, **font_dic_bold)
+
+	if main_set.get('xscale') == 'log': 
+		raise(ValueError('Diurnal Plot has fixed "x ticks" !'))
+
+	if main_set.get('yscale') != 'log':
+		ax.set(yticks=main_set.get('yticks') or _auto_ticks(*main_set['ylim']) or ax.get_yticks(), ylim=main_set['ylim'])
+
+		ax.ticklabel_format(axis='y', scilimits=(-2, 3), useMathText=True)
+		ax.yaxis.offsetText.set_fontproperties(dict(size=fs))
+
+	if twin_set is not None:
+		twin_set.update(kwarg)
+		_twin = twin_set
+
+		axt = ax.twinx()
+		ln_tw, = axt.plot(twin_val, **_twin['twin_plot_set'])
+
+		axt.tick_params(labelsize=fs, labelright=False, pad=10)
+
+		_ytick_twin = _twin.get('twin_yticks', None)
+		axt.tick_params(labelright=show_twin_ytick, right=show_twin_ytick)
+		axt.set_yticks(_ytick_twin or _auto_ticks(*_twin['twin_ylim']) or axt.get_yticks(), 
+					   _ytick_twin or _auto_ticks(*_twin['twin_ylim']) or axt.get_yticklabels())
+
+		if show_twin_label:
+			axt.set_ylabel(_twin['twin_ylabel'], rotation=-90, labelpad=_twin.get('twin_ylabel_pad') or 30, **font_dic_bold)
+
+		axt.set(ylim=_twin['twin_ylim'])
+
+		if show_legend: 
+			ln_lst.append(ln_tw)
+
+		if _twin['out_nam'] is not None:
+			out_nam += f"-{_twin['out_nam']}"
+
+	if show_legend:
+		ax.legend(handles=ln_lst, framealpha=0, fontsize=fs-2., title=main_set.get('leg_title'), title_fontsize=fs-2)
+
+
+	font_dic_bold.update(fontsize=fs+5.)
+	ax.set_title(main_set['title'], pad=8, **font_dic_bold)
+
+	return fig, out_nam
+
+
+
+
+
+
+
+
+
 
 @_template_setting(figsize=(10,8), dirnam='classify_bar', fs=25)
-def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=True, twin=None, twin_set=None, **kwarg):
+def clasfyBar(bar_lst, main_set, clasfy_dic=None, to_ratio=False, show_legend=True, twin=None, twin_set=None, typ_bar='group', **kwarg):
 
 	main_set.update(kwarg)
 	out_nam = main_set["out_nam"]
@@ -614,29 +772,43 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 	leg_nam = main_set['leg_nam']
 
 	if twin is not None:
-		bar_pos = n.arange(0, (len(leg_nam)+2)*len(clasfy_nam), len(leg_nam)+2)
+		bar_pos = n.arange(0, (len(leg_nam)+2) * len(clasfy_nam), len(leg_nam) + 2)
 	else:
-		bar_pos = n.arange(0, (len(leg_nam)+1)*len(clasfy_nam), len(leg_nam)+1)
-	tick_pos = bar_pos.copy() + (len(leg_nam)-1)/2
+		bar_pos = n.arange(0, (len(leg_nam)+1) * len(clasfy_nam), len(leg_nam) + 1)
+	tick_pos = bar_pos.copy() + (len(leg_nam) - 1) / 2
 
-	clasfy_lst = clasfy_lst[0]
+	if typ_bar == 'single':
+		bar_pos -= n.arange(len(clasfy_nam)) * (len(clasfy_nam) - 1)
+		tick_pos = bar_pos.copy()
 
 	## classify 
 	mean_lst, std_lst = [], []
-	if clasfy_lst is not None:
+	if clasfy_dic is not None:
 		df = concat(bar_lst, axis=1)
-		drop_idx = concat([df,twin], axis=1).dropna().index
+		drop_idx = concat([df, twin], axis=1).dropna().index
 		df = df.loc[drop_idx].reindex(df.index)
 
-		for _key, _dt in df.items():
-			_mean_lst, _std_lst = [], []
-			for _clas_nam in clasfy_nam:
-				_dt_bar = _dt.loc[clasfy_lst[_clas_nam]].copy()
-				_mean_lst.append(_dt_bar.mean())
-				_std_lst.append(_dt_bar.std())
+		if typ_bar == 'group':
+			for _key, _dt in df.items():
+				_mean_lst, _std_lst = [], []
+				for _clas_nam in clasfy_nam:
+					_dt_bar = _dt.loc[clasfy_dic[_clas_nam]].copy()
+					_mean_lst.append(_dt_bar.mean())
+					_std_lst.append(_dt_bar.std())
 
-			mean_lst.append(_mean_lst)
-			std_lst.append(_std_lst)
+				mean_lst.append(_mean_lst)
+				std_lst.append(_std_lst)
+
+		elif typ_bar == 'single':
+			for _clas_nam in clasfy_nam:
+				_dt = df.loc[clasfy_dic[_clas_nam]].copy()
+				
+				mean_lst.append(_dt.mean()[0])
+				std_lst.append(_dt.std()[0])
+
+		else:
+			raise ValueError('Please input exist "typ_bar" !')
+
 	else:
 		mean_lst, std_lst = bar_lst[0], bar_lst[1]
 
@@ -647,22 +819,36 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		mean_dt /= mean_dt.sum(axis=0)
 		std_dt  -= std_dt
 
-		main_set.update(ylim=(0,.6), yticks=[0,.2,.4,.6], ylabel='Ratio')
+		main_set.update(ylim=(0, .6), yticks=[0, .2, .4, .6], ylabel='Ratio')
 		main_set['title'] += ' Ratio'
 		out_nam += '-ratio'
 	main_set.update(kwarg)
 
 	## plot
 	leg_lst = []
-	for _mean, _std, _colr, _nam in zip(mean_dt, std_dt, main_set['color_list'], main_set['leg_nam']):
+	if typ_bar == 'group':
+		for _mean, _std, _colr, _nam in zip(mean_dt, std_dt, main_set['color_list'], main_set['leg_nam']):
 
-		bar = ax.bar(bar_pos, _mean, width=1, yerr=[_std,_std], color=_colr, ecolor=_colr, 
+			bar = ax.bar(bar_pos, _mean, width=1, yerr=[_std, _std], color=_colr, ecolor=_colr, 
 						 capsize=0 if to_ratio else 6, label=_nam)
+			bar_pos += 1
+			leg_lst.append(bar)
+
+	elif typ_bar == 'single':
+		bar = ax.bar(bar_pos, mean_dt, width=1, yerr=[std_dt, std_dt],
+					 capsize=0 if to_ratio else 6, label=main_set['leg_nam'])
+
+		[ _bar.set_color(_colr) for _bar, _colr in zip(bar, main_set['color_list'])]
+
 		bar_pos += 1
 		leg_lst.append(bar)
 
+	else:
+		raise ValueError('Please input exist "typ_bar" !')
+
+
 	ax.set(ylim=main_set['ylim'])
-	ax.set(xticks=tick_pos, xlim=(-1,bar_pos[-1]),
+	ax.set(xticks=tick_pos, xlim=(-1, bar_pos[-1]),
 		   yticks=main_set.get('yticks') or _auto_ticks(*main_set['ylim']) or ax.get_yticks(),
 		   ylim=main_set['ylim'],)
 
@@ -682,14 +868,14 @@ def clasfyBar(bar_lst, main_set, clasfy_lst=None, to_ratio=False, show_legend=Tr
 		ax_t = ax.twinx()
 
 		_mean_lst, _std_lst = [], []
-		if clasfy_lst is not None:
+		if clasfy_dic is not None:
 
 			twin = twin.loc[drop_idx].reindex(df.index)
 
 			for _clas_nam in clasfy_nam:
-				_dt = twin.loc[clasfy_lst[_clas_nam]].copy()
-				_mean_lst.append(_dt.mean())
-				_std_lst.append(_dt.std())
+				_dt = twin.loc[clasfy_dic[_clas_nam]].copy()
+				_mean_lst.append(_dt.mean()[0])
+				_std_lst.append(_dt.std()[0] if len(_dt.dropna()) > 1 else 0)
 		else:
 			_mean_lst, _std_lst = twin[0], twin[1]
 
