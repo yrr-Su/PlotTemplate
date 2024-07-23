@@ -146,8 +146,8 @@ def bivariatePolarPlot(df_wd, df_ws, df_val, main_set, calsfy=None, **kwarg):
 
 
 
-@_template_setting(figsize=(9,8), dirnam='scatter', fs=28)
-def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, _clasfy=None, **kwarg):
+@_template_setting(figsize=(9, 8), dirnam='scatter', fs=28)
+def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, ratio_1to1=None, ratio_linregre=None, ratio_start_val=0., _clasfy=None, **kwarg):
 
 	main_set.update(kwarg)
 	out_nam = main_set["out_nam"]
@@ -159,11 +159,13 @@ def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, _clasfy=None, *
 		df_x = df_x.loc[_clasfy].copy()
 		df_y = df_y.loc[_clasfy].copy()
 		df_val = df_val.loc[_clasfy].copy()
-	df_sca = concat([df_x,df_y], axis=1, keys=['x','y'])
+	df_sca = concat([df_x, df_y], axis=1, keys=['x', 'y'])
 	df_x, df_y = df_sca.x, df_sca.y
 
 	box = ax.get_position()
-	ax.set_position([box.x0, box.y0*1.2, box.width, box.height])
+	ax.set_position([box.x0, box.y0 * 1.2, box.width, box.height])
+
+	if ratio_linregre is not None: ratio_1to1 = None
 
 	## plot
 	sca = ax.scatter(df_x, df_y, zorder=3, **main_set['sca_set'])
@@ -173,20 +175,41 @@ def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, _clasfy=None, *
 	
 	ax.grid(color='#999999')
 
+	handles = []
 	if linregre:
 		func, regr_func = _LinRegr(df_x, df_y, _over0=False)
 
 		xmax, ymax = ax.get_xlim()[-1], ax.get_ylim()[-1]
-		x_data = n.linspace(0, xmax if xmax>ymax else ymax, 100)
+		x_data = n.linspace(0, xmax if xmax > ymax else ymax, 100)
 
-		ln, = ax.plot(x_data, func(x_data), color='#ff4c4d', ls='--', label=regr_func,zorder=3)
+		ln, = ax.plot(x_data, func(x_data), color='#ff4c4d', ls='--', label=regr_func, zorder=3)
 		
-		ax.legend(handles=[ln], framealpha=0, fontsize=fs-4.)
+		handles.append(ln)
+		
+		if ratio_linregre is not None: 
+			pass
 	
 	if line_1to1:
-		ax.plot([0,ax.get_ylim()[-1]], [0,ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
+		ax.plot([0, ax.get_ylim()[-1]], [0, ax.get_ylim()[-1]], color='#7f7f7f', zorder=3)
 
-	font_dic_bold.update(fontsize=fs+15.)
+		if ratio_1to1 is not None:
+			# breakpoint()
+			df_range = df_y.where((df_y <= (df_x * (1 + ratio_1to1))) & (df_y >= (df_x * (1 - ratio_1to1)))).copy()
+			sca = ax.scatter(df_x, df_range, zorder=4, fc='#adabab', ec=main_set['sca_set'].get('color', '#000000'))
+
+			invalid_ratio = (len(df_range.dropna()) / len(df_sca.dropna()))
+
+			val_bot, val_top = ax.get_ylim()[-1] * (1 - ratio_1to1), ax.get_ylim()[-1] * (1 + ratio_1to1)
+			fill = ax.fill_between(ax.get_xlim(), [ratio_start_val, val_top], [ratio_start_val, val_bot], color='#d9d9d9', alpha=.4, label=f'{ratio_1to1:.0%} error : {invalid_ratio:.1%}')
+		
+			handles.append(fill)
+
+
+	if len(handles) != 0:
+		ax.legend(handles=handles, framealpha=0, fontsize=fs * .85)
+
+
+	font_dic_bold.update(fontsize=fs * 1.2)
 	ax.set_title(main_set['title'], pad=15, **font_dic_bold)
 
 	return fig, out_nam
@@ -202,6 +225,7 @@ def scatter(df_x, df_y, main_set, linregre=True, line_1to1=True, _clasfy=None, *
 	# ax.ticklabel_format(axis='y',scilimits=(-2,3),useMathText=True)
 	# ax.yaxis.offsetText.set_fontproperties(dict(size=fs))
 
+
 @_template_setting(figsize=(9.6,8), dirnam='scatterVal', fs=30)
 def scatterVal(df_x, df_y, df_val, main_set, df_size=None, size_range=None, linregre=True, line_1to1=True, 
 			   _clasfy=None, show_box=False, box_cut=5, box_qcut=None, **kwarg):
@@ -212,11 +236,16 @@ def scatterVal(df_x, df_y, df_val, main_set, df_size=None, size_range=None, linr
 
 	## parameter
 	fig, ax, fs, font_dic_norm, font_dic_bold = kwarg['fig'], kwarg['ax'], kwarg['fs'], kwarg['font_dic_norm'], kwarg['font_dic_bold']
+
+	df_sca = DataFrame(columns=['x', 'y', 'c'])
+	for _ky, _df in zip(['x', 'y', 'c'], [df_x, df_y, df_val]):
+		df_sca[_ky] = Series(_df).set_axis(n.arange(len(_df)))
+
 	if _clasfy is not None:
-		df_x = df_x.loc[_clasfy].copy()
-		df_y = df_y.loc[_clasfy].copy()
-		df_val = df_val.loc[_clasfy].copy()
-	df_sca = concat([df_x, df_y, df_val], axis=1, keys=['x', 'y', 'c'])
+		for _ky in zip['x', 'y', 'c']:
+			df_sca[_ky] = df_sca[_ky].loc[_clasfy].copy()
+
+	# df_sca = concat([df_x, df_y, df_val], axis=1, keys=['x', 'y', 'c'])
 
 	## plot
 	box = ax.get_position()
@@ -321,9 +350,59 @@ def scatterVal(df_x, df_y, df_val, main_set, df_size=None, size_range=None, linr
 	return fig, out_nam
 
 
+# @_template_setting(figsize=(9.6, 8), dirnam='pcoPlot', fs=30)
+@_template_setting(figsize=_cm2inch(13.2, 11), dirnam='pcoPlot', fs=16.5)
+def pcoPlot(df_x, df_y, df_val, main_set, val_scale='linear', manual_cmap=False, time_tick_set={}, vlim=None, **kwarg):
+
+	main_set.update(kwarg)
+	out_nam = main_set["out_nam"]
+	print(f'pcoPlot : ',end='')
+
+
+	## parameter
+	fig, ax, fs, font_dic_norm, font_dic_bold = kwarg['fig'], kwarg['ax'], kwarg['fs'], kwarg['font_dic_norm'], kwarg['font_dic_bold']
+
+	df_x, df_y, df_val = _coerce_dtype2np(df_x, df_y, df_val)
+
+
+	## plot
+	box = ax.get_position()
+	ax.set_position([box.x0, box.y0 * 1.2, box.width * .9, box.height])
+	cax = fig.add_axes([box.x1 * .97, box.y0 * 1.2, .03, box.height])
+
+	_plot_set = main_set.get('pco_set') or main_set.get('sca_set')
+	if vlim is not None:
+		_plot_set.update(dict(vmin=vlim[0], vmax=vlim[1]))
+	pco = ax.pcolormesh(df_x, df_y, df_val, shading='auto', **_plot_set)
+
+	# if time_tick == 'x':
+		# ax = _pic_set(ax, 'y', main_set, fs, font_dic_bold)
+
+	# if time_tick is None:
+		# ax = _pic_set(ax, 'x', main_set, fs, font_dic_bold)
+		# ax = _pic_set(ax, 'y', main_set, fs, font_dic_bold)
+
+	ax = _pic_set(ax, 'x', main_set, fs, font_dic_bold)
+	ax = _pic_set(ax, 'y', main_set, fs, font_dic_bold)
+
+	cbar = fig.colorbar(pco, cax=cax)
+	font_dic_norm.update(fontsize=fs-1)
+	cax.set_title(main_set['bar_title'], pad=15, **font_dic_norm)
+	cbar.ax.tick_params(labelsize=fs,)
+
+	if val_scale == 'log':
+		pass
+	
+	if manual_cmap:
+		pco.set_cmap(_manual_cmap(manual_cmap))
+
+
+	return fig, out_nam
+
+
 
 @_template_setting(figsize=(9,8), dirnam='scatterMulti', fs=30)
-def scatterMulti(df_x_lst, df_y_lst, main_set, linregre=True, linregre_typ='each', line_1to1=True, **kwarg):
+def scatterMulti(df_x_lst, df_y_lst, main_set, linregre=True, line_1to1=True, linregre_typ='all', **kwarg):
 
 	main_set.update(kwarg)
 	out_nam = main_set["out_nam"]
@@ -334,8 +413,8 @@ def scatterMulti(df_x_lst, df_y_lst, main_set, linregre=True, linregre_typ='each
 
 	## plot
 	box = ax.get_position()
-	ax.set_position( [ box.x0*1.4, box.y0*1.375, box.width, box.height ] )
-	size = 20
+	ax.set_position( [ box.x0 * 1.4, box.y0 * 1.375, box.width, box.height ] )
+	size = kwarg.get('size') or 20
 
 	leg_handle, df_all = [], []
 	for _df_x, _df_y, _set in zip(df_x_lst, df_y_lst, main_set['sca_set']):
@@ -348,7 +427,7 @@ def scatterMulti(df_x_lst, df_y_lst, main_set, linregre=True, linregre_typ='each
 
 		_handle = ax.scatter(_df_x, _df_y, s=20, zorder=2, **_set)
 
-		if linregre & (linregre_typ=='each'):
+		if linregre:
 			func, regr_func = _LinRegr(_df_x, _df_y, _over0=False)
 			_func, _num = regr_func.split('\n')
 			regr_func = f"{_set['label']} : {_func} {_num}"
@@ -362,7 +441,7 @@ def scatterMulti(df_x_lst, df_y_lst, main_set, linregre=True, linregre_typ='each
 	ax = _pic_set(ax, 'x', main_set, fs, font_dic_bold)
 	ax = _pic_set(ax, 'y', main_set, fs, font_dic_bold)
 
-	if linregre:
+	if linregre & (linregre_typ=='all'):
 		df_all = concat(df_all)
 
 		func, regr_func = _LinRegr(df_all.x, df_all.y, _over0=False)
@@ -448,7 +527,8 @@ def boxPlot(df_lst, clasfy_lst, main_set, **kwarg):
 	ax.set_xticks(tick_pos)
 	ax.set_xticklabels(main_set['tick_nam'], **font_dic_bold)
 
-	ax.legend(handles=leg_lst, labels=main_set['leg_nam'], framealpha=0, fontsize=fs-5.)
+	ax.legend(handles=leg_lst, labels=main_set['leg_nam'],
+		   	  framealpha=0, fontsize=fs-5., ncol=2 if len(leg_lst) > 5 else 1)
 
 	font_dic_bold.update(fontsize=fs+5.)
 	ax.set_title(main_set['title'], pad=15, **font_dic_bold)
@@ -464,9 +544,12 @@ def boxPlot(df_lst, clasfy_lst, main_set, **kwarg):
 	# ax.set_ylabel(main_set['ylabel'],**font_dic_bold)
 
 
+	width, outer_r, pie_pad, pctdis = .2, 1.2, .0, .01
+pie_set=dict(width= .2)
+
 
 @_template_setting(figsize=(10,10), dirnam='piePlot', fs=20)
-def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, show_info=True, pie_type='origin', pct_lim=0, 
+def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, show_info=True, pie_type='origin', pct_lim=0, pie_set=dict(),
 			info_loc=(.5,.5), **kwarg):
 	"""
 	plot Pie plot
@@ -502,7 +585,11 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 	def autopct_format(pct):
 		return f'{pct:.1f}%' if pct > pct_lim else ''
 
-	width, outer_r, pie_pad, pctdis = .2, 1.2, .0, .01
+	pie_set_def = dict(width=.2, outer_r=1.2, pie_pad=.0, pctdis=0.01)
+	pie_set_def.update(pie_set)
+
+	width, outer_r, pie_pad, pctdis = pie_set_def['width'], pie_set_def['outer_r'], pie_set_def['pie_pad'], pie_set_def['pctdis']
+
 	color, nam = main_set['color'], main_set.get('text_nam')
 
 	if pie_type=='donut':
@@ -531,8 +618,10 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 			   startangle=0, wedgeprops=dict(edgecolor='k'))
 
 	if show_legend:
-		legend = ax.legend(main_set['leg_nam'], framealpha=0, fontsize=fs, title_fontsize=fs, bbox_to_anchor=[.9, .8], loc=3,
-						   title=main_set['leg_title'])
+		legend = ax.legend(main_set['leg_nam'], framealpha=0, fontsize=fs,
+					 	   title_fontsize=fs, bbox_to_anchor=[.9, .8],
+						   loc=3, title=main_set['leg_title'],
+						   ncol=2 if len(main_set['leg_nam']) > 5 else 1)
 
 	font_dic_bold.update(fontsize=fs+5.)
 	ax.set_title(main_set['title'], pad=8, **font_dic_bold)
@@ -602,6 +691,8 @@ def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=Non
 
 	return fig, out_nam
 
+
+
 @_template_setting(figsize=(8,6), dirnam='stackPlot', fs=17)
 def stackPlot(*df_lst, main_set, x_lst=None, y_lst=None, ini_val=0, end_val=None, vlines=False, hlines=False, show_legend=True, **kwarg):
 
@@ -670,7 +761,7 @@ def stackPlot(*df_lst, main_set, x_lst=None, y_lst=None, ini_val=0, end_val=None
 	return fig, out_nam
 
 
-@_template_setting(figsize=(10,6), dirnam='diuPlot', fs=19)
+@_template_setting(figsize=(10,6), dirnam='diuPlot', fs=23)
 def diuPlot(*df_lst, main_set, std_shade=True, show_legend=True, vlines=False, hlines=False, twin_val=None, twin_set=None, show_twin_label=True, **kwarg):
 
 	main_set.update(kwarg)
@@ -682,7 +773,7 @@ def diuPlot(*df_lst, main_set, std_shade=True, show_legend=True, vlines=False, h
 
 	df_all = concat(df_lst, axis=1)
 	df_grp = df_all.groupby(df_all.index.hour)
-	
+
 	df_mn, df_std = df_grp.mean(), df_grp.std()
 
 	## plot
@@ -759,7 +850,7 @@ def diuPlot(*df_lst, main_set, std_shade=True, show_legend=True, vlines=False, h
 
 
 @_template_setting(figsize=(10,8), dirnam='classify_bar', fs=25)
-def clasfyBar(bar_lst, main_set, clasfy_dic=None, to_ratio=False, show_legend=True, twin=None, twin_set=None, typ_bar='group', **kwarg):
+def clasfyBar(bar_lst, main_set, clasfy_dic=None, to_ratio=False, show_legend=True, twin=None, twin_set=None, typ_bar='group', sym_idx=True, **kwarg):
 
 	main_set.update(kwarg)
 	out_nam = main_set["out_nam"]
@@ -785,8 +876,9 @@ def clasfyBar(bar_lst, main_set, clasfy_dic=None, to_ratio=False, show_legend=Tr
 	mean_lst, std_lst = [], []
 	if clasfy_dic is not None:
 		df = concat(bar_lst, axis=1)
-		drop_idx = concat([df, twin], axis=1).dropna().index
-		df = df.loc[drop_idx].reindex(df.index)
+		if sym_idx:
+			drop_idx = concat([df, twin], axis=1).dropna().index
+			df = df.loc[drop_idx].reindex(df.index)
 
 		if typ_bar == 'group':
 			for _key, _dt in df.items():
@@ -865,12 +957,20 @@ def clasfyBar(bar_lst, main_set, clasfy_dic=None, to_ratio=False, show_legend=Tr
 	ax.set_title(main_set['title'], pad=15, **font_dic_bold)
 
 	if twin is not None:
+		box = ax.get_position()
+		ax.set_position([box.x0, box.y0, box.width * .95, box.height])
+
 		ax_t = ax.twinx()
+		box = ax_t.get_position()
+		ax_t.set_position([box.x0, box.y0, box.width * .95, box.height])
 
 		_mean_lst, _std_lst = [], []
 		if clasfy_dic is not None:
+			if sym_idx:
+				twin = twin.loc[drop_idx].reindex(df.index)
 
-			twin = twin.loc[drop_idx].reindex(df.index)
+			if type(twin) == Series:
+				twin = twin.to_frame()
 
 			for _clas_nam in clasfy_nam:
 				_dt = twin.loc[clasfy_dic[_clas_nam]].copy()

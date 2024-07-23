@@ -1,12 +1,13 @@
 
 import functools
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb, to_hex
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb, to_hex, LinearSegmentedColormap
 from matplotlib.pyplot import subplots, close, show, rcParams
 from scipy.optimize import curve_fit
 import numpy as n
 from pathlib import Path
 from pandas import concat, DataFrame
 import bdb
+
 
 
 __all__ = [
@@ -16,6 +17,8 @@ __all__ = [
 			'_cm2inch',
 			'_auto_ticks',
 			'_pic_set',
+			'_manual_cmap',
+			'_coerce_dtype2np',
 
 			'iniParams',
 
@@ -33,13 +36,14 @@ def _template_setting(**_setting):
 	def _decorator(plot_func):
 
 		@functools.wraps(plot_func)
-		def _wrap(*arg,**kwarg):
+		def _wrap(*arg, **kwarg):
 
 			## figure setting
+			_sub_dir	 = kwarg.get('sub_dir') or Path('.')
 			_figsize	 = kwarg.get('figsize') or _setting['figsize']
 			_dirnam		 = kwarg.get('dirnam')  or _setting['dirnam']
-			_apnd_nam	 = kwarg.get('nam',False)
-			_fs			 = kwarg.setdefault('fs',_setting['fs'])
+			_apnd_nam	 = kwarg.get('nam', False)
+			_fs			 = kwarg.setdefault('fs', _setting['fs'])
 			_subplot_kw	 = _setting.get('subplot_kw')
 
 			## parameter
@@ -50,7 +54,7 @@ def _template_setting(**_setting):
 			_font_dic_bold = dict(fontsize=_fs, math_fontfamily='custom', fontweight='bold')
 
 			## figure
-			_fig, _ax = subplots(figsize=_figsize, subplot_kw=_subplot_kw, dpi=150.)
+			_fig, _ax = subplots(figsize=_figsize, subplot_kw=_subplot_kw, dpi=200.)
 
 			## plot function
 			_fail = False
@@ -76,7 +80,7 @@ def _template_setting(**_setting):
 			if iniParams.showPic: show()
 
 			## savefig and create figure dir
-			_path_out = iniParams.pathPicOut / _dirnam
+			_path_out = iniParams.pathPicOut / _dirnam / _sub_dir
 			_path_out.mkdir(exist_ok=True, parents=True)
 			_fig.savefig(_path_out / _out_nam)
 			close()
@@ -84,19 +88,20 @@ def _template_setting(**_setting):
 		return _wrap
 	return _decorator
 
-def _LinRegr(_dt_x,_dt_y,_over0=False):
+
+def _LinRegr(_dt_x, _dt_y, _over0=False):
 	
-	_df = DataFrame([_dt_x.values.flatten(),_dt_y.values.flatten()]).T.dropna()
+	_df = DataFrame([_dt_x.values.flatten(), _dt_y.values.flatten()]).T.dropna()
 	_df_x, _df_y = _df[0], _df[1]
 
-	def R_sq(_fc,_opt,_x,_y):
-		_tss = n.sum((_y-_y.mean())**2.)  ## total sum of square
-		_rss = n.sum((_y-_fc(_x,*_opt))**2.) ## residual sum of square
-		return 1.-_rss/_tss
+	def R_sq(_fc, _opt, _x, _y):
+		_tss = n.sum((_y - _y.mean())**2.)  ## total sum of square
+		_rss = n.sum((_y - _fc(_x, *_opt))**2.) ## residual sum of square
+		return 1. - _rss / _tss
 
 	## regression
 	if _over0:
-		func = lambda _x, _sl : _sl*_x  
+		func = lambda _x, _sl : _sl * _x  
 	else:
 		func = lambda _x, _sl, _inte : _sl*_x+_inte
 
@@ -167,7 +172,7 @@ def _pic_set(_ax, _axis, _set, _fs, _f_set):
 
 		_ax.set_xlabel(_set['xlabel'], labelpad=_set.get('xlabel_pad') or 0, **_f_set)
 
-		_ax.ticklabel_format(axis='x', scilimits=(-2,4), useMathText=True)
+		_ax.ticklabel_format(axis='x', scilimits=(-2, 4), useMathText=True)
 		_ax.xaxis.offsetText.set_fontproperties(dict(size=_fs))
 
 	elif _axis=='y':
@@ -176,18 +181,58 @@ def _pic_set(_ax, _axis, _set, _fs, _f_set):
 
 		_ax.set_ylabel(_set['ylabel'], labelpad=_set.get('ylabel_pad') or 0, **_f_set)
 
-		_ax.ticklabel_format(axis='y', scilimits=(-2,3), useMathText=True)
+		_ax.ticklabel_format(axis='y', scilimits=(-1, 2), useMathText=True)
 		_ax.yaxis.offsetText.set_fontproperties(dict(size=_fs))
 
 	return _ax
 
 
+def _manual_cmap(*colr, number=256, reverse=False): #
+
+	"""
+	create manual color map (cmap)
+
+	Parameters
+	----------
+	*colr : str
+		Combine colors to create a cmap.
+	number : int, default 256
+		Number of colors in cmap.
+	reverse : bool, default False
+		Reverse the order of cmap.
+	"""
+
+	## fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+
+	## parameter
+	if reverse:
+		colr = colr[::-1]
+
+	_fade_coe = n.linspace( 0, 1, number//(len(colr)-1)+1 )[:-1].reshape(-1,1)
+	_colr_lst = n.array( list( map( lambda _: [ int(_.strip('#')[_i:_i+2],16)/256 for _i in range(0,6,2) ], colr ) ) )
+
+	## a*coe + b*(1-coe) -> a + (b-a)*coe
+	_fade_colr = []
+	for _fs_colr, _diff in zip( _colr_lst[:-1], n.diff(_colr_lst, axis=0) ):
+		_fade_colr.append( (_fs_colr + _diff * _fade_coe) )
+
+	_fade_colr_lst = list( map( to_hex, n.vstack(_fade_colr) ) ) + [ colr[-1] ]
+	_cmap = LinearSegmentedColormap.from_list('', _fade_colr_lst)
+
+	return _cmap
 
 
 
+def _coerce_dtype2np(*_par_lst):
 
+	_out = []
+	for _par in _par_lst:
 
+		if type(_par) is not n.ndarray:
+			_out.append(n.array(_par))
+		else:
+			_out.append(_par)
 
-
+	return _out
 
 

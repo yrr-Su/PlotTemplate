@@ -9,8 +9,10 @@ class setting_parser:
 	def __init__(self, clasfy_nam=None, update_file=None):
 
 		if update_file is not None:
+			import sys
 			from importlib import import_module
-			_setting = import_module( str(update_file) )
+			sys.path.insert(1, str(update_file.parent))
+			_setting = import_module(update_file.name)
 
 			basic_setting.update( getattr(_setting, 'basic_setting', {}) )
 			clasfy_setting.update( getattr(_setting, 'clasfy_setting', {}) )
@@ -23,7 +25,7 @@ class setting_parser:
 			self.cla_bsc = clasfy_setting[clasfy_nam].pop('basic')
 			self.cla_set.update(clasfy_setting[clasfy_nam])
 
-		self.out_nam = f"{'-' + self.cla_bsc.get('nam') or ''}"
+		self.out_nam = f"{'-' + (self.cla_bsc.get('nam') or '')}"
 
 
 	def get_config(self, set_nam):
@@ -116,7 +118,7 @@ class setting_parser:
 		nam_lst = set_nam.split('-')
 		x_set, y_set = self.cla_set[nam_lst[0]], self.cla_set[nam_lst[1]]
 
-		for _nam in ['label', 'ticks', 'lim', 'ticks', 'label_pad']:
+		for _nam in ['label', 'ticks', 'lim', 'ticks', 'label_pad', 'tick_pad']:
 			all_set[f'x{_nam}'] = x_set.get(_nam)
 			all_set[f'y{_nam}'] = y_set.get(_nam)
 
@@ -225,6 +227,22 @@ class setting_parser:
 		return all_set
 
 
+	def set_pco(self, set_nam):
 
+		all_set = {}
+		nam_lst = set_nam.split('-')
 
+		x_set, y_set, val_set = self.cla_set[nam_lst[0]], self.cla_set[nam_lst[1]], self.cla_set[nam_lst[2]]
+
+		for _nam in ['label', 'ticks', 'lim', 'ticks', 'label_pad']:
+			all_set[f'x{_nam}'] = x_set.get(_nam)
+			all_set[f'y{_nam}'] = y_set.get(_nam)
+
+		for _nam in ['bar_title', 'pco_set', 'sca_set']:
+			all_set[_nam] = val_set.get(_nam)
+
+		all_set['title'] = self.cla_bsc.get('title')
+		all_set['out_nam'] = f"pco-{set_nam}{self.out_nam}"
+
+		return all_set
 

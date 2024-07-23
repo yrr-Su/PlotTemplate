@@ -28,6 +28,9 @@ np = n
 
 
 basic_setting = {
+
+				'time' : dict(),
+
 				'temp' : dict(lim=(12,36),label=r'Temperature ($\rm \degree$C)',ticks=[12,20,28,36],nam='temp',
 							  plot_set=dict(label='Temp.',color='#fd3535')),
 
@@ -254,9 +257,9 @@ basic_setting = {
 							  sca_set=dict(cmap='jet',vmin=10,vmax=60),
 							  bar_title=r'PM$\rm _{10}$ ($\rm \mu g/m^3$)'),
 
-				'PM25'  : dict(lim=(0,60),label=r'PM$\bf _{2.5}$ $\bf( \mu g/m^3)$',ticks=[0,20,40,60],title=r'PM$\bf _{2.5}$',
-							  plot_set=dict(label='PM$_{2.5}$',color='#fd3535'),label_pad=-3,
-							  sca_set=dict(cmap='jet',vmin=10,vmax=30),
+				'PM25'  : dict(lim=(0, 60), label=r'PM$\bf _{2.5}$ $\bf( \mu g/m^3)$', title=r'PM$\bf _{2.5}$',
+							  plot_set=dict(label='PM$_{2.5}$', color='#fd3535'), label_pad=-3,
+							  sca_set=dict(cmap='jet', vmin=10, vmax=30),
 							  bar_title=r'PM$\rm _{2.5}$ ($\rm \mu g/m^3$)'),
 
 				'rec_PM25'  : dict(lim=(0,60),label=r'Reconstructed Mass $\bf( \mu g/m^3)$',ticks=[0,20,40,60],title=r'Reconstructed Mass',
