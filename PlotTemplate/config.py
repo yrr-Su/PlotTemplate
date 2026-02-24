@@ -1,6 +1,7 @@
 
 from PlotTemplate.utils.setting import basic_setting, clasfy_setting
 import numpy as n
+from pathlib import Path
 np = n
 
 # get setting
@@ -11,8 +12,8 @@ class setting_parser:
 		if update_file is not None:
 			import sys
 			from importlib import import_module
-			sys.path.insert(1, str(update_file.parent))
-			_setting = import_module(update_file.name)
+			sys.path.insert(1, str(Path(update_file).parent))
+			_setting = import_module(Path(update_file).name)
 
 			basic_setting.update( getattr(_setting, 'basic_setting', {}) )
 			clasfy_setting.update( getattr(_setting, 'clasfy_setting', {}) )
@@ -234,7 +235,7 @@ class setting_parser:
 
 		x_set, y_set, val_set = self.cla_set[nam_lst[0]], self.cla_set[nam_lst[1]], self.cla_set[nam_lst[2]]
 
-		for _nam in ['label', 'ticks', 'lim', 'ticks', 'label_pad']:
+		for _nam in ['label', 'ticks', 'lim', 'label_pad', 'scale']:
 			all_set[f'x{_nam}'] = x_set.get(_nam)
 			all_set[f'y{_nam}'] = y_set.get(_nam)
 

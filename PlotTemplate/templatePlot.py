@@ -632,7 +632,8 @@ def piePlot(*dt_lst, main_set, br_per=None, show_legend=True, show_txt=True, sho
 
 
 @_template_setting(figsize=(8,6), dirnam='linePlot', fs=17)
-def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=None, vlines=False, hlines=False, **kwarg):
+def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=None, vlines=False, hlines=False,
+			 show_legend=True, **kwarg):
 
 	main_set.update(kwarg)
 	out_nam = main_set["out_nam"]
@@ -665,6 +666,7 @@ def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=Non
 	ax.set(xlim=main_set['xlim'], ylim=main_set['ylim'], 
 		   xscale=main_set.get('xscale','linear'), yscale=main_set.get('yscale','linear'))
 
+
 	if vlines:
 		ax.vlines(vlines, *ax.get_ylim(), color='#444444', ls='--')
 	if hlines:
@@ -684,7 +686,20 @@ def linePlot(*df_lst, main_set, shade_lst=None, x_lst=None, y_lst=None, twin=Non
 		ax.ticklabel_format(axis='y', scilimits=(-2,3), useMathText=True)
 		ax.yaxis.offsetText.set_fontproperties(dict(size=fs))
 
-	ax.legend(handles=ln_lst, framealpha=0, fontsize=fs-2., title=main_set.get('leg_title'), title_fontsize=fs-2)
+	if show_legend:
+		ax.legend(handles=ln_lst, framealpha=0, fontsize=fs-2., title=main_set.get('leg_title'), title_fontsize=fs-2)
+
+	if main_set.get('xticks') is not None:
+		ax.set_xticks(main_set['xticks'])
+
+	if main_set.get('xticklabels') is not None:
+		ax.set_xticklabels(main_set['xticklabels'])
+
+	if main_set.get('yticks') is not None:
+		ax.set_yticks(main_set['yticks'])
+
+	if main_set.get('yticklabels') is not None:
+		ax.set_yticklabels(main_set['yticklabels'])
 
 	font_dic_bold.update(fontsize=fs+5.)
 	ax.set_title(main_set['title'], pad=8, **font_dic_bold)

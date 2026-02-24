@@ -149,7 +149,7 @@ def _auto_ticks(_hd, _tail):
 
 		for _num in _tk_intvl:
 			if (_diff % _num) != 0: continue
-			
+
 			_intvl = (_diff // _num) / _diff_sci
 			if ((_intvl % 5) != 0 ) & (_diff > 100): continue
 
@@ -164,7 +164,8 @@ def _auto_ticks(_hd, _tail):
 def _pic_set(_ax, _axis, _set, _fs, _f_set):
 
 	_ax.tick_params(axis=_axis, labelsize=_fs, pad=_set.get(f'{_axis}tick_pad') or 5)
-	_ax.set(**{f'{_axis}lim' : _set[f'{_axis}lim']})
+	_ax.set(**{f'{_axis}lim' : _set[f'{_axis}lim']},
+		 	**{f'{_axis}scale' : _set.get(f'{_axis}scale') or 'linear'},)
 
 	if _axis=='x':
 		_ax.set(xticks=_set.get('xticks') or _auto_ticks(*_set['xlim']) or _ax.get_xticks(), 
@@ -172,7 +173,19 @@ def _pic_set(_ax, _axis, _set, _fs, _f_set):
 
 		_ax.set_xlabel(_set['xlabel'], labelpad=_set.get('xlabel_pad') or 0, **_f_set)
 
-		_ax.ticklabel_format(axis='x', scilimits=(-2, 4), useMathText=True)
+		if _set.get('xscale') != 'log':
+			if _set.get('xticklabels') is not None:
+				_ax.set_xticklabels(
+					_set['xticklabels'],
+					rotation=_set.get('xtick_rot') or 0
+					)
+			else:
+				_ax.ticklabel_format(
+					axis='x',
+					scilimits=(-2, 4),
+					useMathText=True
+					)
+
 		_ax.xaxis.offsetText.set_fontproperties(dict(size=_fs))
 
 	elif _axis=='y':
@@ -181,7 +194,8 @@ def _pic_set(_ax, _axis, _set, _fs, _f_set):
 
 		_ax.set_ylabel(_set['ylabel'], labelpad=_set.get('ylabel_pad') or 0, **_f_set)
 
-		_ax.ticklabel_format(axis='y', scilimits=(-1, 2), useMathText=True)
+		if _set.get('yscale') != 'log':
+			_ax.ticklabel_format(axis='y', scilimits=(-1, 2), useMathText=True)
 		_ax.yaxis.offsetText.set_fontproperties(dict(size=_fs))
 
 	return _ax
